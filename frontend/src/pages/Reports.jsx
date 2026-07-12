@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Download, FileText, TrendingUp, Fuel, DollarSign, FileDown } from 'lucide-react';
+import { Download, FileText, TrendingUp, Fuel, DollarSign, FileDown, Search } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import api from '../lib/api';
 import { Button, Card, PageHeader, LoadingSpinner } from '../components/UI';
@@ -9,13 +9,17 @@ export default function Reports() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [downloadingId, setDownloadingId] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [vehicleTypeFilter, setVehicleTypeFilter] = useState('');
 
   useEffect(() => {
-    api.get('/reports/analytics')
+    setLoading(true);
+    const params = vehicleTypeFilter ? `?vehicleType=${vehicleTypeFilter}` : '';
+    api.get(`/reports/analytics${params}`)
       .then((res) => setData(res.data))
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, []);
+  }, [vehicleTypeFilter]);
 
   const exportCSV = async () => {
     const token = localStorage.getItem('token');
@@ -75,6 +79,12 @@ export default function Reports() {
 
   const { fleetUtilization, totalOperationalCost, avgFuelEfficiency, vehicleAnalytics, expenseBreakdown } = data;
 
+  const filteredVehicles = vehicleAnalytics.filter(v =>
+    !searchQuery ||
+    v.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    v.registrationNumber.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div>
       <PageHeader
@@ -87,6 +97,22 @@ export default function Reports() {
           </div>
         }
       />
+
+      <div className="flex justify-end mb-6">
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium text-slate-500">Filter Vehicle Type:</label>
+          <select 
+            value={vehicleTypeFilter} 
+            onChange={(e) => setVehicleTypeFilter(e.target.value)}
+            className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+          >
+            <option value="">All Types</option>
+            <option value="Van">Van</option>
+            <option value="Truck">Truck</option>
+            <option value="Bus">Bus</option>
+          </select>
+        </div>
+      </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {[
@@ -136,9 +162,20 @@ export default function Reports() {
       </div>
 
       <Card className="overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800">
-          <h3 className="font-semibold text-slate-900 dark:text-white">Vehicle ROI Analysis</h3>
-          <p className="text-xs text-slate-500 mt-0.5">ROI = (Revenue - Operational Cost) / Acquisition Cost × 100</p>
+        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h3 className="font-semibold text-slate-900 dark:text-white">Vehicle ROI Analysis</h3>
+            <p className="text-xs text-slate-500 mt-0.5">ROI = (Revenue - Operational Cost) / Acquisition Cost × 100</p>
+          </div>
+          <div className="relative w-full sm:max-w-xs">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search vehicles by name or reg..."
+              className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500"
+            />
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -156,36 +193,44 @@ export default function Reports() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {vehicleAnalytics.map((v) => (
-                <tr key={v.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                  <td className="px-6 py-3.5">
-                    <span className="font-medium text-slate-900 dark:text-white">{v.name}</span>
-                    <span className="block text-xs text-slate-400 font-mono">{v.registrationNumber}</span>
-                  </td>
-                  <td className="px-6 py-3.5">{formatCurrency(v.fuelCost)}</td>
-                  <td className="px-6 py-3.5">{formatCurrency(v.maintenanceCost)}</td>
-                  <td className="px-6 py-3.5 font-medium">{formatCurrency(v.operationalCost)}</td>
-                  <td className="px-6 py-3.5">{v.totalDistance} km</td>
-                  <td className="px-6 py-3.5">{v.fuelEfficiency} km/L</td>
-                  <td className="px-6 py-3.5">{formatCurrency(v.revenue)}</td>
-                  <td className="px-6 py-3.5">
-                    <span className={`font-semibold ${v.roi >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-                      {v.roi}%
-                    </span>
-                  </td>
-                  <td className="px-6 py-3.5">
-                    <Button
-                      variant="secondary"
-                      className="text-xs py-1.5 px-3"
-                      disabled={downloadingId === v.id}
-                      onClick={() => exportVehiclePDF(v.id, v.registrationNumber)}
-                    >
-                      <FileDown size={14} />
-                      {downloadingId === v.id ? 'Generating…' : 'Download PDF'}
-                    </Button>
+              {filteredVehicles.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="px-6 py-12 text-center text-slate-400">
+                    No vehicles match your search criteria.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredVehicles.map((v) => (
+                  <tr key={v.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                    <td className="px-6 py-3.5">
+                      <span className="font-medium text-slate-900 dark:text-white">{v.name}</span>
+                      <span className="block text-xs text-slate-400 font-mono">{v.registrationNumber}</span>
+                    </td>
+                    <td className="px-6 py-3.5">{formatCurrency(v.fuelCost)}</td>
+                    <td className="px-6 py-3.5">{formatCurrency(v.maintenanceCost)}</td>
+                    <td className="px-6 py-3.5 font-medium">{formatCurrency(v.operationalCost)}</td>
+                    <td className="px-6 py-3.5">{v.totalDistance} km</td>
+                    <td className="px-6 py-3.5">{v.fuelEfficiency} km/L</td>
+                    <td className="px-6 py-3.5">{formatCurrency(v.revenue)}</td>
+                    <td className="px-6 py-3.5">
+                      <span className={`font-semibold ${v.roi >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                        {v.roi}%
+                      </span>
+                    </td>
+                    <td className="px-6 py-3.5">
+                      <Button
+                        variant="secondary"
+                        className="text-xs py-1.5 px-3"
+                        disabled={downloadingId === v.id}
+                        onClick={() => exportVehiclePDF(v.id, v.registrationNumber)}
+                      >
+                        <FileDown size={14} />
+                        {downloadingId === v.id ? 'Generating…' : 'Download PDF'}
+                      </Button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

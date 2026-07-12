@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Wrench } from 'lucide-react';
+import { Plus, Wrench, Search } from 'lucide-react';
 import api from '../lib/api';
 import { Button, Card, PageHeader, Modal, Input, Select, LoadingSpinner, EmptyState } from '../components/UI';
 import { StatusBadge } from '../components/StatusBadge';
@@ -15,6 +15,25 @@ export default function Maintenance() {
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState({ vehicleId: '', description: '', cost: '' });
   const [error, setError] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [vehicleDropdownOpen, setVehicleDropdownOpen] = useState(false);
+  const [vehicleQuery, setVehicleQuery] = useState('');
+
+  const filteredLogs = logs.filter((log) => {
+    const term = searchQuery.toLowerCase();
+    return !searchQuery ||
+      log.description.toLowerCase().includes(term) ||
+      (log.vehicle?.name && log.vehicle.name.toLowerCase().includes(term)) ||
+      (log.vehicle?.registrationNumber && log.vehicle.registrationNumber.toLowerCase().includes(term));
+  });
+
+  const filteredVehiclesForSelection = vehicles.filter(v => {
+    const term = vehicleQuery.toLowerCase();
+    const isSelected = vehicles.some(x => `${x.name} (${x.registrationNumber})` === vehicleQuery && x.id === form.vehicleId);
+    return isSelected || !vehicleQuery ||
+      v.name.toLowerCase().includes(term) ||
+      v.registrationNumber.toLowerCase().includes(term);
+  });
 
   const canEdit = canManageMaintenance(user?.role);
 
@@ -33,10 +52,15 @@ export default function Maintenance() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    if (!form.vehicleId) {
+      setError('Please select a vehicle from the dropdown list.');
+      return;
+    }
     try {
       await api.post('/maintenance', form);
       setModal(false);
       setForm({ vehicleId: '', description: '', cost: '' });
+      setVehicleQuery('');
       fetchData();
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to create maintenance record');
@@ -60,15 +84,30 @@ export default function Maintenance() {
         title="Maintenance Logs"
         subtitle={canEdit ? 'Track vehicle maintenance and service records' : 'Review maintenance costs and service history'}
         action={canEdit && (
-          <Button onClick={() => setModal(true)}><Plus size={16} /> New Maintenance</Button>
+          <Button onClick={() => {
+            setVehicleQuery('');
+            setVehicleDropdownOpen(false);
+            setForm({ vehicleId: '', description: '', cost: '' });
+            setModal(true);
+          }}><Plus size={16} /> New Maintenance</Button>
         )}
       />
 
-      {logs.length === 0 ? (
-        <Card><EmptyState icon={Wrench} title="No maintenance records" description="Create a maintenance log when a vehicle needs service" /></Card>
+      <div className="relative max-w-sm mb-6">
+        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        <input
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search logs description or vehicle..."
+          className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none"
+        />
+      </div>
+
+      {filteredLogs.length === 0 ? (
+        <Card><EmptyState icon={Wrench} title="No maintenance records found" description="Adjust your search filter or create a new log" /></Card>
       ) : (
         <div className="space-y-4">
-          {logs.map((log) => (
+          {filteredLogs.map((log) => (
             <Card key={log.id} className="p-5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
@@ -94,12 +133,52 @@ export default function Maintenance() {
 
       <Modal open={modal} onClose={() => setModal(false)} title="Create Maintenance Record">
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Select label="Vehicle" value={form.vehicleId} onChange={(e) => setForm({ ...form, vehicleId: e.target.value })} required>
-            <option value="">Select vehicle</option>
-            {vehicles.map((v) => (
-              <option key={v.id} value={v.id}>{v.name} ({v.registrationNumber}) — {v.status.replace(/_/g, ' ')}</option>
-            ))}
-          </Select>
+          <div className="relative space-y-1.5">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Vehicle</label>
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Select vehicle..."
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500"
+                value={vehicleQuery}
+                onChange={(e) => {
+                  setVehicleQuery(e.target.value);
+                  setForm(f => ({ ...f, vehicleId: '' }));
+                  setVehicleDropdownOpen(true);
+                }}
+                onFocus={() => setVehicleDropdownOpen(true)}
+                onBlur={() => setTimeout(() => setVehicleDropdownOpen(false), 250)}
+              />
+              <button 
+                type="button"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                onClick={() => setVehicleDropdownOpen(!vehicleDropdownOpen)}
+              >
+                <Search size={16} />
+              </button>
+            </div>
+            {vehicleDropdownOpen && (
+              <div className="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg">
+                {filteredVehiclesForSelection.length === 0 ? (
+                  <div className="px-4 py-2.5 text-sm text-slate-500">No vehicles found</div>
+                ) : (
+                  filteredVehiclesForSelection.map((v) => (
+                    <div
+                      key={v.id}
+                      className="px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-brand-900/20 cursor-pointer"
+                      onMouseDown={() => {
+                        setVehicleQuery(`${v.name} (${v.registrationNumber})`);
+                        setForm(f => ({ ...f, vehicleId: v.id }));
+                        setVehicleDropdownOpen(false);
+                      }}
+                    >
+                      {v.name} ({v.registrationNumber}) — {v.status.replace(/_/g, ' ')}
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
           <Input label="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="e.g. Oil Change" required />
           <Input label="Estimated Cost ($)" type="number" value={form.cost} onChange={(e) => setForm({ ...form, cost: e.target.value })} />
           <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-3 py-2 rounded-lg">

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Fuel, Save, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Fuel, Save, ChevronDown, ChevronUp, Search } from 'lucide-react';
 import api from '../lib/api';
 import { Button, Card, PageHeader, Modal, Input, Select, LoadingSpinner } from '../components/UI';
 import { formatCurrency, formatDate } from '../lib/utils';
@@ -27,6 +27,7 @@ export default function Expenses() {
     date: ''
   });
   const [expandedVehicles, setExpandedVehicles] = useState({});
+  const [searchQuery, setSearchQuery] = useState('');
 
   const toggleVehicle = (vehicleId) => {
     setExpandedVehicles(prev => ({
@@ -101,6 +102,26 @@ export default function Expenses() {
   };
 
   const otherExpenses = expenses.filter((e) => e.type !== 'FUEL');
+
+  const filteredVehicles = vehicles.filter(v => 
+    !searchQuery ||
+    v.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    v.registrationNumber.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredFuelLogs = fuelLogs.filter(f =>
+    !searchQuery ||
+    (f.vehicle?.name && f.vehicle.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (f.vehicle?.registrationNumber && f.vehicle.registrationNumber.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  const filteredOtherExpenses = otherExpenses.filter(e =>
+    !searchQuery ||
+    (e.vehicle?.name && e.vehicle.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (e.vehicle?.registrationNumber && e.vehicle.registrationNumber.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    e.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (e.description && e.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
   const totalFuelCost = fuelLogs.reduce((s, f) => s + f.cost, 0);
   const totalExpenses = otherExpenses.reduce((s, e) => s + e.amount, 0);
 
@@ -158,15 +179,27 @@ export default function Expenses() {
         </Card>
       </div>
 
-      <div className="flex gap-2 mb-4">
-        {['vehicle', 'fuel', 'expenses'].map((t) => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
-              tab === t ? 'bg-brand-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
-            }`}>
-            {t === 'vehicle' ? 'Vehicle Breakdown' : t === 'fuel' ? 'Fuel Logs' : 'Other Expenses'}
-          </button>
-        ))}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+        <div className="flex gap-2">
+          {['vehicle', 'fuel', 'expenses'].map((t) => (
+            <button key={t} onClick={() => setTab(t)}
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                tab === t ? 'bg-brand-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+              }`}>
+              {t === 'vehicle' ? 'Vehicle Breakdown' : t === 'fuel' ? 'Fuel Logs' : 'Other Expenses'}
+            </button>
+          ))}
+        </div>
+
+        <div className="relative w-full sm:max-w-xs">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={`Search ${tab === 'vehicle' ? 'vehicle breakdown' : tab === 'fuel' ? 'fuel logs' : 'other expenses'}...`}
+            className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500"
+          />
+        </div>
       </div>
 
       <Card className="overflow-hidden">
@@ -184,12 +217,12 @@ export default function Expenses() {
               </tr>
             </thead>
             {tab === 'vehicle' ? (
-              vehicles.length === 0 ? (
+              filteredVehicles.length === 0 ? (
                 <tbody>
-                  <tr><td colSpan={6} className="px-6 py-12 text-center text-slate-400">No vehicles available</td></tr>
+                  <tr><td colSpan={6} className="px-6 py-12 text-center text-slate-400">No vehicles found</td></tr>
                 </tbody>
               ) : (
-                vehicles.map((v) => {
+                filteredVehicles.map((v) => {
                   const vehicleFuel = fuelLogs.filter(f => f.vehicleId === v.id);
                   const vehicleExp = otherExpenses.filter(e => e.vehicleId === v.id);
                   const totalFuel = vehicleFuel.reduce((sum, f) => sum + f.cost, 0);
@@ -265,9 +298,9 @@ export default function Expenses() {
             ) : (
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {tab === 'fuel' ? (
-                  fuelLogs.length === 0 ? (
-                    <tr><td colSpan={4} className="px-6 py-12 text-center text-slate-400"><Fuel size={32} className="mx-auto mb-2 opacity-50" />No fuel logs yet</td></tr>
-                  ) : fuelLogs.map((f) => (
+                  filteredFuelLogs.length === 0 ? (
+                    <tr><td colSpan={4} className="px-6 py-12 text-center text-slate-400"><Fuel size={32} className="mx-auto mb-2 opacity-50" />No fuel logs found</td></tr>
+                  ) : filteredFuelLogs.map((f) => (
                     <tr key={f.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
                       <td className="px-6 py-3.5">{formatDate(f.date)}</td>
                       <td className="px-6 py-3.5 font-medium">{f.vehicle?.name}</td>
@@ -276,9 +309,9 @@ export default function Expenses() {
                     </tr>
                   ))
                 ) : (
-                  otherExpenses.length === 0 ? (
-                    <tr><td colSpan={5} className="px-6 py-12 text-center text-slate-400">No expenses recorded</td></tr>
-                  ) : otherExpenses.map((e) => (
+                  filteredOtherExpenses.length === 0 ? (
+                    <tr><td colSpan={5} className="px-6 py-12 text-center text-slate-400">No expenses found</td></tr>
+                  ) : filteredOtherExpenses.map((e) => (
                     <tr key={e.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
                       <td className="px-6 py-3.5">{formatDate(e.date)}</td>
                       <td className="px-6 py-3.5 font-medium">{e.vehicle?.name}</td>

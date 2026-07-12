@@ -7,8 +7,12 @@ import { buildFleetReportPdf, gatherFleetReportData, getFleetReportFilename } fr
 const router = express.Router();
 router.use(authenticate);
 
-async function getVehicleAnalytics() {
+async function getVehicleAnalytics(type) {
+  const where = {};
+  if (type) where.type = type;
+
   const vehicles = await prisma.vehicle.findMany({
+    where,
     include: {
       fuelLogs: true,
       expenses: true,
@@ -53,7 +57,8 @@ async function getVehicleAnalytics() {
 
 router.get('/analytics', authorize('FLEET_MANAGER', 'FINANCIAL_ANALYST'), async (req, res) => {
   try {
-    const vehicleAnalytics = await getVehicleAnalytics();
+    const { vehicleType } = req.query;
+    const vehicleAnalytics = await getVehicleAnalytics(vehicleType);
 
     const totalVehicles = vehicleAnalytics.length;
     const nonRetired = vehicleAnalytics.filter((v) => v.status !== 'RETIRED');
@@ -71,8 +76,14 @@ router.get('/analytics', authorize('FLEET_MANAGER', 'FINANCIAL_ANALYST'), async 
           vehicleAnalytics.filter((v) => v.fuelEfficiency > 0).length
         : 0;
 
+    const expenseWhere = {};
+    if (vehicleType) {
+      expenseWhere.vehicle = { type: vehicleType };
+    }
+
     const monthlyExpenses = await prisma.expense.groupBy({
       by: ['type'],
+      where: expenseWhere,
       _sum: { amount: true },
     });
 
