@@ -3,6 +3,7 @@ import prisma from '../lib/prisma.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { validateTripDispatch } from '../utils/rules.js';
 import { calcFuelCost, getFuelPricePerLiter } from '../lib/fuelPrice.js';
+import { createNotification, notifyFleetManagers } from '../utils/notificationHelper.js';
 
 const router = express.Router();
 router.use(authenticate);
@@ -66,6 +67,41 @@ router.post('/', authorize('FLEET_MANAGER', 'DRIVER'), async (req, res) => {
       },
       include: { vehicle: true, driver: true },
     });
+
+    // Notify assigned driver and fleet managers
+    const driverUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { id: driver.userId || '' },
+          { licenseNumber: driver.licenseNumber },
+        ],
+        deleted: false,
+      },
+      select: { id: true },
+    });
+
+    const tripSummary = `${trip.source} to ${trip.destination}`;
+
+    if (driverUser) {
+      await createNotification(
+        driverUser.id,
+        'New Trip Assigned',
+        `You have been assigned a trip from ${trip.source} to ${trip.destination}. Please approve or cancel it.`,
+        'TRIP_ASSIGNED',
+        {
+          actionable: true,
+          actionType: 'TRIP_ACTION',
+          actionData: { tripId: trip.id },
+        }
+      );
+    }
+
+    await notifyFleetManagers(
+      'New Trip Created',
+      `Trip ${tripSummary} was created by ${req.user.name} and assigned to ${driver.name}.`,
+      'TRIP_CREATE'
+    );
+
     res.status(201).json(trip);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -102,6 +138,35 @@ router.post('/:id/dispatch', authorize('FLEET_MANAGER', 'DRIVER'), async (req, r
 
       return updatedTrip;
     });
+
+    // Notify driver and fleet managers
+    const driverUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { id: result.driver.userId || '' },
+          { licenseNumber: result.driver.licenseNumber },
+        ],
+        deleted: false,
+      },
+      select: { id: true },
+    });
+
+    const tripSummary = `${result.source} to ${result.destination}`;
+
+    if (driverUser) {
+      await createNotification(
+        driverUser.id,
+        'Trip Dispatched',
+        `Your trip from ${result.source} to ${result.destination} has been dispatched.`,
+        'TRIP_STATUS'
+      );
+    }
+
+    await notifyFleetManagers(
+      'Trip Dispatched',
+      `Trip ${tripSummary} (Driver: ${result.driver.name}) has been dispatched.`,
+      'TRIP_STATUS'
+    );
 
     res.json(result);
   } catch (err) {
@@ -175,6 +240,35 @@ router.post('/:id/complete', authorize('FLEET_MANAGER', 'DRIVER'), async (req, r
       return updatedTrip;
     });
 
+    // Notify driver and fleet managers
+    const driverUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { id: result.driver.userId || '' },
+          { licenseNumber: result.driver.licenseNumber },
+        ],
+        deleted: false,
+      },
+      select: { id: true },
+    });
+
+    const tripSummary = `${result.source} to ${result.destination}`;
+
+    if (driverUser) {
+      await createNotification(
+        driverUser.id,
+        'Trip Completed',
+        `Your trip from ${result.source} to ${result.destination} has been completed.`,
+        'TRIP_STATUS'
+      );
+    }
+
+    await notifyFleetManagers(
+      'Trip Completed',
+      `Trip ${tripSummary} (Driver: ${result.driver.name}) has been completed.`,
+      'TRIP_STATUS'
+    );
+
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -209,6 +303,35 @@ router.post('/:id/cancel', authorize('FLEET_MANAGER', 'DRIVER'), async (req, res
 
       return updatedTrip;
     });
+
+    // Notify driver and fleet managers
+    const driverUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { id: result.driver.userId || '' },
+          { licenseNumber: result.driver.licenseNumber },
+        ],
+        deleted: false,
+      },
+      select: { id: true },
+    });
+
+    const tripSummary = `${result.source} to ${result.destination}`;
+
+    if (driverUser) {
+      await createNotification(
+        driverUser.id,
+        'Trip Cancelled',
+        `Your trip from ${result.source} to ${result.destination} has been cancelled.`,
+        'TRIP_STATUS'
+      );
+    }
+
+    await notifyFleetManagers(
+      'Trip Cancelled',
+      `Trip ${tripSummary} (Driver: ${result.driver.name}) has been cancelled.`,
+      'TRIP_STATUS'
+    );
 
     res.json(result);
   } catch (err) {

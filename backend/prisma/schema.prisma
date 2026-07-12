@@ -72,6 +72,10 @@ model User {
   // Financial Analyst role fields
   employeeId          String?
   department          String?
+
+  // Relations
+  notifications       Notification[]
+  driverProfile       Driver?
 }
 
 model Vehicle {
@@ -105,6 +109,10 @@ model Driver {
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
   trips            Trip[]
+
+  // Link to User account
+  userId           String?      @unique
+  user             User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 
 model Trip {
@@ -172,4 +180,19 @@ model FuelPrice {
   id            String   @id @default("current")
   pricePerLiter Float    @default(1.50)
   updatedAt     DateTime @updatedAt
+}
+
+model Notification {
+  id          String   @id @default(uuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  message     String
+  type        String   // e.g. "TRIP_ASSIGNED", "LICENSE_EXPIRY", "SYSTEM_ALERT", "TRIP_STATUS"
+  read        Boolean  @default(false)
+  actionable  Boolean  @default(false)
+  actionType  String?  // e.g. "TRIP_ACTION"
+  actionData  String?  // e.g. JSON string '{"tripId": "..."}'
+  actionDone  Boolean  @default(false)
+  createdAt   DateTime @default(now())
 }

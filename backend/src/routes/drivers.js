@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import prisma from '../lib/prisma.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { isLicenseValid } from '../utils/rules.js';
+import { notifyFleetManagers } from '../utils/notificationHelper.js';
 
 const router = express.Router();
 router.use(authenticate);
@@ -111,7 +112,7 @@ router.post('/', authorize('FLEET_MANAGER', 'SAFETY_OFFICER'), async (req, res) 
     }
 
     const hashedPassword = await bcrypt.hash('password123', 10);
-    await prisma.user.create({
+    const user = await prisma.user.create({
       data: {
         email: finalEmail,
         password: hashedPassword,
@@ -123,6 +124,19 @@ router.post('/', authorize('FLEET_MANAGER', 'SAFETY_OFFICER'), async (req, res) 
         licenseExpiry: new Date(licenseExpiry),
       },
     });
+
+    // Link the driver record back to the user account
+    await prisma.driver.update({
+      where: { id: driver.id },
+      data: { userId: user.id },
+    });
+
+    // Trigger notification
+    await notifyFleetManagers(
+      'Driver Registered',
+      `Driver ${driver.name} (License: ${driver.licenseNumber}) was registered by ${req.user.name}.`,
+      'DRIVER_CREATE'
+    );
 
     res.status(201).json(driver);
   } catch (err) {
@@ -196,6 +210,13 @@ router.delete('/:id', authorize('FLEET_MANAGER'), async (req, res) => {
         });
       }
     }
+
+    // Trigger notification
+    await notifyFleetManagers(
+      'Driver Deleted',
+      `Driver ${driver.name} was deleted by ${req.user.name}.`,
+      'DRIVER_DELETE'
+    );
 
     res.json({ message: 'Driver deleted successfully.' });
   } catch (err) {

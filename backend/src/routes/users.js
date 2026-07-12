@@ -2,6 +2,14 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import prisma from '../lib/prisma.js';
 import { authenticate, authorize } from '../middleware/auth.js';
+import { notifyFleetManagers } from '../utils/notificationHelper.js';
+
+const roleLabels = {
+  FLEET_MANAGER: 'Fleet Manager',
+  DRIVER: 'Driver',
+  SAFETY_OFFICER: 'Safety Officer',
+  FINANCIAL_ANALYST: 'Financial Analyst',
+};
 
 const router = express.Router();
 
@@ -155,9 +163,17 @@ router.post('/', async (req, res) => {
           contactNumber: contactNumber || '',
           safetyScore: safetyScore !== undefined ? parseFloat(safetyScore) : 100,
           status: 'AVAILABLE',
+          userId: user.id, // Link to User
         },
       });
     }
+
+    // Trigger notification
+    await notifyFleetManagers(
+      'New Employee Registered',
+      `Employee ${user.name} (${roleLabels[user.role] || user.role}) was registered by ${req.user.name}.`,
+      'EMPLOYEE_CREATE'
+    );
 
     res.status(201).json(user);
   } catch (err) {
@@ -195,6 +211,14 @@ router.delete('/:id', async (req, res) => {
       where: { id },
       data: { deleted: true },
     });
+
+    // Trigger notification
+    await notifyFleetManagers(
+      'Employee Deleted',
+      `Employee ${user.name} (${roleLabels[user.role] || user.role}) was deleted by ${req.user.name}.`,
+      'EMPLOYEE_DELETE'
+    );
+
     res.json({ message: 'User deleted successfully.' });
   } catch (err) {
     res.status(500).json({ error: err.message });

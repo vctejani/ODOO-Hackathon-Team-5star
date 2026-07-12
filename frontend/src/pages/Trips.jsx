@@ -133,22 +133,40 @@ export default function Trips() {
                     <span>Created: {formatDate(t.createdAt)}</span>
                   </div>
                 </div>
-                {canManage && (
-                  <div className="flex gap-2">
-                    {t.status === 'DRAFT' && (
-                      <>
-                        <Button onClick={() => handleDispatch(t.id)}><Send size={14} /> Dispatch</Button>
-                        <Button variant="danger" onClick={() => handleCancel(t.id)}><XCircle size={14} /> Cancel</Button>
-                      </>
-                    )}
-                    {t.status === 'DISPATCHED' && (
-                      <>
-                        <Button variant="success" onClick={() => setCompleteModal(t.id)}><CheckCircle size={14} /> Complete</Button>
-                        <Button variant="danger" onClick={() => handleCancel(t.id)}><XCircle size={14} /> Cancel</Button>
-                      </>
-                    )}
-                  </div>
-                )}
+                {(() => {
+                  const isDriver = user?.role === 'DRIVER';
+                  const isAssignedToMe = isDriver && (t.driver?.userId === user?.id || t.driver?.licenseNumber === user?.licenseNumber || t.driver?.name === user?.name);
+                  const showActions = user?.role === 'FLEET_MANAGER' || isAssignedToMe;
+
+                  if (!showActions) return null;
+
+                  return (
+                    <div className="flex gap-2">
+                      {t.status === 'DRAFT' && (
+                        <>
+                          <Button onClick={() => handleDispatch(t.id)} className="flex items-center gap-1">
+                            {isDriver ? <CheckCircle size={14} /> : <Send size={14} />} 
+                            {isDriver ? 'Approve' : 'Dispatch'}
+                          </Button>
+                          <Button variant="danger" onClick={() => handleCancel(t.id)} className="flex items-center gap-1">
+                            <XCircle size={14} /> 
+                            {isDriver ? 'Reject' : 'Cancel'}
+                          </Button>
+                        </>
+                      )}
+                      {t.status === 'DISPATCHED' && (
+                        <>
+                          <Button variant="success" onClick={() => setCompleteModal(t.id)} className="flex items-center gap-1">
+                            <CheckCircle size={14} /> Complete
+                          </Button>
+                          <Button variant="danger" onClick={() => handleCancel(t.id)} className="flex items-center gap-1">
+                            <XCircle size={14} /> Cancel
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             </Card>
           ))}
