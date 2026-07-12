@@ -2,6 +2,7 @@ import express from 'express';
 import prisma from '../lib/prisma.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { validateTripDispatch } from '../utils/rules.js';
+import { calcFuelCost, getFuelPricePerLiter } from '../lib/fuelPrice.js';
 
 const router = express.Router();
 router.use(authenticate);
@@ -145,12 +146,27 @@ router.post('/:id/complete', authorize('FLEET_MANAGER', 'DRIVER'), async (req, r
       });
 
       if (fuelConsumed && parseFloat(fuelConsumed) > 0) {
+        const liters = parseFloat(fuelConsumed);
+        const pricePerLiter = await getFuelPricePerLiter(tx);
+        const fuelCost = calcFuelCost(liters, pricePerLiter);
+
         await tx.fuelLog.create({
           data: {
             vehicleId: trip.vehicleId,
             tripId: trip.id,
-            liters: parseFloat(fuelConsumed),
-            cost: 0,
+            liters,
+            cost: fuelCost,
+            date: new Date(),
+          },
+        });
+
+        await tx.expense.create({
+          data: {
+            vehicleId: trip.vehicleId,
+            tripId: trip.id,
+            type: 'FUEL',
+            amount: fuelCost,
+            description: `Trip fuel: ${liters}L @ $${pricePerLiter}/L`,
             date: new Date(),
           },
         });

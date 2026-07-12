@@ -51,9 +51,7 @@ export default function Layout() {
     <>
       <div className="px-5 py-6 border-b border-slate-200 dark:border-slate-800">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center shadow-lg shadow-brand-600/30">
-            <Truck size={20} className="text-white" />
-          </div>
+          <img src="/favicon.png" alt="TransitOps Logo" className="w-10 h-10 rounded-xl object-cover shadow-lg" />
           <div>
             <h1 className="font-bold text-lg text-slate-900 dark:text-white tracking-tight">TransitOps</h1>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">Fleet Platform</p>

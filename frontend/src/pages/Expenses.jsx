@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Fuel } from 'lucide-react';
+import { Plus, Fuel, Save } from 'lucide-react';
 import api from '../lib/api';
 import { Button, Card, PageHeader, Modal, Input, Select, LoadingSpinner } from '../components/UI';
 import { formatCurrency, formatDate } from '../lib/utils';
@@ -11,34 +11,57 @@ export default function Expenses() {
   const [fuelLogs, setFuelLogs] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [vehicles, setVehicles] = useState([]);
+  const [fuelPrice, setFuelPrice] = useState('');
+  const [savingPrice, setSavingPrice] = useState(false);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('fuel');
   const [fuelModal, setFuelModal] = useState(false);
   const [expenseModal, setExpenseModal] = useState(false);
-  const [fuelForm, setFuelForm] = useState({ vehicleId: '', liters: '', cost: '', date: '' });
+  const [fuelForm, setFuelForm] = useState({ vehicleId: '', liters: '', date: '' });
   const [expenseForm, setExpenseForm] = useState({ vehicleId: '', type: 'TOLL', amount: '', description: '', date: '' });
 
   const canEdit = canManageExpenses(user?.role);
+  const priceNum = parseFloat(fuelPrice) || 0;
+  const litersNum = parseFloat(fuelForm.liters) || 0;
+  const calculatedCost = priceNum > 0 && litersNum > 0
+    ? Math.round(litersNum * priceNum * 100) / 100
+    : 0;
 
   const fetchData = async () => {
-    const [fuelRes, expRes, vehRes] = await Promise.all([
+    const [fuelRes, expRes, vehRes, priceRes] = await Promise.all([
       api.get('/expenses/fuel'),
       api.get('/expenses/expenses'),
       api.get('/vehicles'),
+      api.get('/expenses/fuel-price'),
     ]);
     setFuelLogs(fuelRes.data);
     setExpenses(expRes.data);
     setVehicles(vehRes.data);
+    setFuelPrice(String(priceRes.data.pricePerLiter));
     setLoading(false);
   };
 
   useEffect(() => { fetchData(); }, []);
 
+  const handleSaveFuelPrice = async () => {
+    setSavingPrice(true);
+    try {
+      await api.put('/expenses/fuel-price', { pricePerLiter: parseFloat(fuelPrice) });
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to save fuel price');
+    } finally {
+      setSavingPrice(false);
+    }
+  };
+
   const handleFuelSubmit = async (e) => {
     e.preventDefault();
-    await api.post('/expenses/fuel', fuelForm);
+    await api.post('/expenses/fuel', {
+      ...fuelForm,
+      cost: calculatedCost,
+    });
     setFuelModal(false);
-    setFuelForm({ vehicleId: '', liters: '', cost: '', date: '' });
+    setFuelForm({ vehicleId: '', liters: '', date: '' });
     fetchData();
   };
 
@@ -67,6 +90,30 @@ export default function Expenses() {
           </div>
         )}
       />
+
+      {canEdit && (
+        <Card className="p-5 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+            <div className="flex-1 max-w-xs">
+              <Input
+                label="Current Fuel Price ($/liter)"
+                type="number"
+                step="0.01"
+                min="0.01"
+                value={fuelPrice}
+                onChange={(e) => setFuelPrice(e.target.value)}
+                placeholder="e.g. 1.50"
+              />
+            </div>
+            <Button onClick={handleSaveFuelPrice} disabled={savingPrice || !fuelPrice}>
+              <Save size={16} /> {savingPrice ? 'Saving...' : 'Save Fuel Price'}
+            </Button>
+          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-3">
+            Fuel log costs are calculated automatically: <strong>Cost = Liters × Price/L</strong>
+          </p>
+        </Card>
+      )}
 
       <div className="grid sm:grid-cols-3 gap-4 mb-6">
         <Card className="p-5">
@@ -142,12 +189,22 @@ export default function Expenses() {
             <option value="">Select vehicle</option>
             {vehicles.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
           </Select>
-          <Input label="Liters" type="number" value={fuelForm.liters} onChange={(e) => setFuelForm({ ...fuelForm, liters: e.target.value })} required />
-          <Input label="Cost ($)" type="number" value={fuelForm.cost} onChange={(e) => setFuelForm({ ...fuelForm, cost: e.target.value })} required />
+          <Input label="Liters" type="number" step="0.1" value={fuelForm.liters} onChange={(e) => setFuelForm({ ...fuelForm, liters: e.target.value })} required />
+          <div className="px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Calculated Cost</p>
+            <p className="text-lg font-semibold text-slate-900 dark:text-white mt-0.5">
+              {formatCurrency(calculatedCost)}
+              {litersNum > 0 && priceNum > 0 && (
+                <span className="text-sm font-normal text-slate-500 ml-2">
+                  ({litersNum} L × ${priceNum}/L)
+                </span>
+              )}
+            </p>
+          </div>
           <Input label="Date" type="date" value={fuelForm.date} onChange={(e) => setFuelForm({ ...fuelForm, date: e.target.value })} />
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => setFuelModal(false)}>Cancel</Button>
-            <Button type="submit">Save Fuel Log</Button>
+            <Button type="submit" disabled={!calculatedCost}>Save Fuel Log</Button>
           </div>
         </form>
       </Modal>

@@ -165,3 +165,9 @@ model Expense {
   trip        Trip?       @relation(fields: [tripId], references: [id])
   createdAt   DateTime    @default(now())
 }
+
+model FuelPrice {
+  id            String   @id @default("current")
+  pricePerLiter Float    @default(1.50)
+  updatedAt     DateTime @updatedAt
+}
