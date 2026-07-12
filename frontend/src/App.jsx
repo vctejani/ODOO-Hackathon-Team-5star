@@ -10,6 +10,7 @@ import Trips from './pages/Trips';
 import Maintenance from './pages/Maintenance';
 import Expenses from './pages/Expenses';
 import Reports from './pages/Reports';
+import Employees from './pages/Employees';
 import { LoadingSpinner } from './components/UI';
 
 function ProtectedRoute({ children }) {
@@ -31,6 +32,7 @@ function AppRoutes() {
         <Route path="maintenance" element={<Maintenance />} />
         <Route path="expenses" element={<Expenses />} />
         <Route path="reports" element={<Reports />} />
+        <Route path="employees" element={<Employees />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

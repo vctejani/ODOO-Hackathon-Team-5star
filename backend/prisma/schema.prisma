@@ -48,13 +48,29 @@ enum ExpenseType {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  name      String
-  role      Role
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                  String    @id @default(uuid())
+  email               String    @unique
+  password            String
+  name                String
+  role                Role
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  // Role-specific fields
+  contactNumber       String?
+  
+  // Driver role fields
+  licenseNumber       String?   @unique
+  licenseCategory     String?
+  licenseExpiry       DateTime?
+  
+  // Safety Officer role fields
+  certificationNumber String?
+  safetyRegion        String?
+  
+  // Financial Analyst role fields
+  employeeId          String?
+  department          String?
 }
 
 model Vehicle {

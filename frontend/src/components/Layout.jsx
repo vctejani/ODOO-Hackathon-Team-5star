@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Truck, Users, Route, Wrench, Fuel,
-  BarChart3, LogOut, Moon, Sun, Menu, X, Bell,
+  BarChart3, LogOut, Moon, Sun, Menu, X, Bell, UserPlus,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
@@ -16,6 +16,7 @@ const navItems = [
   { to: '/maintenance', icon: Wrench, label: 'Maintenance' },
   { to: '/expenses', icon: Fuel, label: 'Fuel & Expenses' },
   { to: '/reports', icon: BarChart3, label: 'Reports' },
+  { to: '/employees', icon: UserPlus, label: 'Employees', adminOnly: true },
 ];
 
 export default function Layout() {
@@ -44,7 +45,9 @@ export default function Layout() {
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-1">
-        {navItems.map(({ to, icon: Icon, label }) => (
+        {navItems
+          .filter((item) => !item.adminOnly || user?.role === 'FLEET_MANAGER')
+          .map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
             to={to}
