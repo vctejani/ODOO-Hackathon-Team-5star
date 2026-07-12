@@ -30,6 +30,7 @@ export default function Employees() {
     licenseNumber: '',
     licenseCategory: 'B',
     licenseExpiry: '',
+    safetyScore: '100',
     // Safety Officer-specific
     certificationNumber: '',
     safetyRegion: 'North',
@@ -81,6 +82,7 @@ export default function Employees() {
         payload.licenseNumber = form.licenseNumber;
         payload.licenseCategory = form.licenseCategory;
         payload.licenseExpiry = form.licenseExpiry;
+        payload.safetyScore = form.safetyScore;
       } else if (form.role === 'SAFETY_OFFICER') {
         payload.certificationNumber = form.certificationNumber;
         payload.safetyRegion = form.safetyRegion;
@@ -269,7 +271,7 @@ export default function Employees() {
                         {emp.role === 'DRIVER' && (
                           <>
                             <p className="text-slate-700 dark:text-slate-300 font-medium">License: <span className="font-mono bg-slate-100 dark:bg-slate-850 px-1 rounded">{emp.licenseNumber || 'N/A'}</span></p>
-                            <p className="text-slate-400">Cat: {emp.licenseCategory} | Exp: {formatDate(emp.licenseExpiry)}</p>
+                            <p className="text-slate-400">Cat: {emp.licenseCategory} | Exp: {formatDate(emp.licenseExpiry)} | Safety Score: <span className="font-semibold text-slate-700 dark:text-slate-300">{emp.safetyScore ?? '100'}</span></p>
                           </>
                         )}
                         {emp.role === 'SAFETY_OFFICER' && (
@@ -389,7 +391,7 @@ export default function Employees() {
 
             {/* Dynamic Role-Specific Fields */}
             {form.role === 'DRIVER' && (
-              <div className="md:col-span-2 bg-slate-50 dark:bg-slate-800/40 p-4 rounded-xl border border-slate-200/60 dark:border-slate-850 grid grid-cols-1 md:grid-cols-3 gap-4 animate-in slide-in-from-top-4 duration-200">
+              <div className="md:col-span-2 bg-slate-50 dark:bg-slate-800/40 p-4 rounded-xl border border-slate-200/60 dark:border-slate-850 grid grid-cols-1 md:grid-cols-4 gap-4 animate-in slide-in-from-top-4 duration-200">
                 <Input
                   label="License Number"
                   placeholder="DL-XXXXXXXX"
@@ -412,6 +414,14 @@ export default function Employees() {
                   value={form.licenseExpiry}
                   onChange={(e) => setForm({ ...form, licenseExpiry: e.target.value })}
                   required
+                />
+                <Input
+                  label="Safety Score"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={form.safetyScore}
+                  onChange={(e) => setForm({ ...form, safetyScore: e.target.value })}
                 />
               </div>
             )}

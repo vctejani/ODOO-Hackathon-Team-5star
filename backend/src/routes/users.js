@@ -30,7 +30,27 @@ router.get('/', async (req, res) => {
       },
       orderBy: { createdAt: 'desc' },
     });
-    res.json(users);
+
+    const drivers = await prisma.driver.findMany({
+      select: {
+        licenseNumber: true,
+        safetyScore: true,
+      },
+    });
+
+    const driverMap = new Map(drivers.map((d) => [d.licenseNumber, d.safetyScore]));
+
+    const enrichedUsers = users.map((u) => {
+      if (u.role === 'DRIVER' && u.licenseNumber) {
+        return {
+          ...u,
+          safetyScore: driverMap.get(u.licenseNumber) ?? 100,
+        };
+      }
+      return u;
+    });
+
+    res.json(enrichedUsers);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -49,6 +69,7 @@ router.post('/', async (req, res) => {
       licenseNumber,
       licenseCategory,
       licenseExpiry,
+      safetyScore,
       // Safety Officer specific
       certificationNumber,
       safetyRegion,
@@ -130,7 +151,7 @@ router.post('/', async (req, res) => {
           licenseCategory,
           licenseExpiry: new Date(licenseExpiry),
           contactNumber: contactNumber || '',
-          safetyScore: 100,
+          safetyScore: safetyScore !== undefined ? parseFloat(safetyScore) : 100,
           status: 'AVAILABLE',
         },
       });

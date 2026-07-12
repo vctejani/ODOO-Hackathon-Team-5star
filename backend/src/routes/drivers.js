@@ -1,4 +1,5 @@
 import express from 'express';
+import bcrypt from 'bcryptjs';
 import prisma from '../lib/prisma.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { isLicenseValid } from '../utils/rules.js';
@@ -84,7 +85,8 @@ router.post('/', authorize('FLEET_MANAGER', 'SAFETY_OFFICER'), async (req, res) 
     const { name, licenseNumber, licenseCategory, licenseExpiry, contactNumber, safetyScore } = req.body;
 
     const existing = await prisma.driver.findUnique({ where: { licenseNumber } });
-    if (existing) {
+    const existingUserLicense = await prisma.user.findUnique({ where: { licenseNumber } });
+    if (existing || existingUserLicense) {
       return res.status(400).json({ error: 'License number must be unique' });
     }
 
@@ -98,6 +100,30 @@ router.post('/', authorize('FLEET_MANAGER', 'SAFETY_OFFICER'), async (req, res) 
         safetyScore: parseFloat(safetyScore || 100),
       },
     });
+
+    // Create corresponding user record so that employees and drivers are in sync
+    const email = `${name.toLowerCase().replace(/[^a-z0-9]/g, '')}@transitops.com`;
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    let finalEmail = email;
+    if (existingUser) {
+      const cleanLicense = licenseNumber.toLowerCase().replace(/[^a-z0-9]/g, '');
+      finalEmail = `${name.toLowerCase().replace(/[^a-z0-9]/g, '')}.${cleanLicense}@transitops.com`;
+    }
+
+    const hashedPassword = await bcrypt.hash('password123', 10);
+    await prisma.user.create({
+      data: {
+        email: finalEmail,
+        password: hashedPassword,
+        name,
+        role: 'DRIVER',
+        contactNumber,
+        licenseNumber,
+        licenseCategory,
+        licenseExpiry: new Date(licenseExpiry),
+      },
+    });
+
     res.status(201).json(driver);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -107,6 +133,11 @@ router.post('/', authorize('FLEET_MANAGER', 'SAFETY_OFFICER'), async (req, res) 
 router.put('/:id', authorize('FLEET_MANAGER', 'SAFETY_OFFICER'), async (req, res) => {
   try {
     const { name, licenseNumber, licenseCategory, licenseExpiry, contactNumber, safetyScore, status } = req.body;
+
+    const oldDriver = await prisma.driver.findUnique({ where: { id: req.params.id } });
+    if (!oldDriver) {
+      return res.status(404).json({ error: 'Driver not found' });
+    }
 
     const driver = await prisma.driver.update({
       where: { id: req.params.id },
@@ -120,6 +151,23 @@ router.put('/:id', authorize('FLEET_MANAGER', 'SAFETY_OFFICER'), async (req, res
         ...(status && { status }),
       },
     });
+
+    if (oldDriver.licenseNumber) {
+      const user = await prisma.user.findUnique({ where: { licenseNumber: oldDriver.licenseNumber } });
+      if (user) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            ...(name && { name }),
+            ...(licenseNumber && { licenseNumber }),
+            ...(licenseCategory && { licenseCategory }),
+            ...(licenseExpiry && { licenseExpiry: new Date(licenseExpiry) }),
+            ...(contactNumber && { contactNumber }),
+          },
+        });
+      }
+    }
+
     res.json(driver);
   } catch (err) {
     res.status(500).json({ error: err.message });

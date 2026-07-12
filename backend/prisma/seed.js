@@ -10,15 +10,70 @@ async function main() {
 
   const users = [
     { email: 'fleet@transitops.com', name: 'Sarah Chen', role: 'FLEET_MANAGER' },
-    { email: 'driver@transitops.com', name: 'Alex Rivera', role: 'DRIVER' },
+    {
+      email: 'driver@transitops.com',
+      name: 'Alex Rivera',
+      role: 'DRIVER',
+      contactNumber: '+1-555-0101',
+      licenseNumber: 'DL-ALEX-2024',
+      licenseCategory: 'B+C',
+      licenseExpiry: new Date('2027-06-15'),
+    },
     { email: 'safety@transitops.com', name: 'James Wilson', role: 'SAFETY_OFFICER' },
     { email: 'finance@transitops.com', name: 'Maria Santos', role: 'FINANCIAL_ANALYST' },
+    {
+      email: 'jordan@transitops.com',
+      name: 'Jordan Lee',
+      role: 'DRIVER',
+      contactNumber: '+1-555-0102',
+      licenseNumber: 'DL-JL-2023',
+      licenseCategory: 'C',
+      licenseExpiry: new Date('2026-08-20'),
+    },
+    {
+      email: 'sam@transitops.com',
+      name: 'Sam Patel',
+      role: 'DRIVER',
+      contactNumber: '+1-555-0103',
+      licenseNumber: 'DL-SP-2022',
+      licenseCategory: 'B',
+      licenseExpiry: new Date('2026-03-10'),
+    },
+    {
+      email: 'chris@transitops.com',
+      name: 'Chris Morgan',
+      role: 'DRIVER',
+      contactNumber: '+1-555-0104',
+      licenseNumber: 'DL-CM-2021',
+      licenseCategory: 'C+E',
+      licenseExpiry: new Date('2025-07-01'),
+    },
+    {
+      email: 'taylor@transitops.com',
+      name: 'Taylor Brooks',
+      role: 'DRIVER',
+      contactNumber: '+1-555-0105',
+      licenseNumber: 'DL-TB-2024',
+      licenseCategory: 'B',
+      licenseExpiry: new Date('2028-01-15'),
+    },
   ];
 
   for (const u of users) {
     await prisma.user.upsert({
       where: { email: u.email },
-      update: {},
+      update: {
+        name: u.name,
+        role: u.role,
+        contactNumber: u.contactNumber || null,
+        licenseNumber: u.licenseNumber || null,
+        licenseCategory: u.licenseCategory || null,
+        licenseExpiry: u.licenseExpiry || null,
+        certificationNumber: u.certificationNumber || null,
+        safetyRegion: u.safetyRegion || null,
+        employeeId: u.employeeId || null,
+        department: u.department || null,
+      },
       create: { ...u, password },
     });
   }
