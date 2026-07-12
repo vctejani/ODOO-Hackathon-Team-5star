@@ -6,7 +6,7 @@ import { isLicenseValid } from '../utils/rules.js';
 const router = express.Router();
 router.use(authenticate);
 
-router.get('/', async (req, res) => {
+router.get('/', authorize('FLEET_MANAGER', 'SAFETY_OFFICER'), async (req, res) => {
   try {
     const { status, search } = req.query;
     const where = {};
@@ -37,7 +37,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.get('/available', async (req, res) => {
+router.get('/available', authorize('FLEET_MANAGER', 'DRIVER'), async (req, res) => {
   try {
     const drivers = await prisma.driver.findMany({
       where: { status: 'AVAILABLE' },
@@ -66,7 +66,7 @@ router.get('/expiring-licenses', authorize('SAFETY_OFFICER', 'FLEET_MANAGER'), a
   }
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', authorize('FLEET_MANAGER', 'SAFETY_OFFICER'), async (req, res) => {
   try {
     const driver = await prisma.driver.findUnique({
       where: { id: req.params.id },

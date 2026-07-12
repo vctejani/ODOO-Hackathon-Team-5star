@@ -5,6 +5,7 @@ import { Button, Card, PageHeader, Modal, Input, Select, LoadingSpinner, EmptySt
 import { StatusBadge } from '../components/StatusBadge';
 import { formatCurrency } from '../lib/utils';
 import { useAuth } from '../context/AuthContext';
+import { canManageVehicles } from '../lib/permissions';
 
 export default function Vehicles() {
   const { user } = useAuth();
@@ -19,7 +20,7 @@ export default function Vehicles() {
   });
   const [error, setError] = useState('');
 
-  const canEdit = user?.role === 'FLEET_MANAGER';
+  const canEdit = canManageVehicles(user?.role);
 
   const fetchVehicles = () => {
     const params = new URLSearchParams();
@@ -59,7 +60,7 @@ export default function Vehicles() {
     <div>
       <PageHeader
         title="Vehicle Registry"
-        subtitle="Manage fleet assets and vehicle lifecycle"
+        subtitle={canEdit ? 'Manage fleet assets and vehicle lifecycle' : 'View fleet assets for cost analysis'}
         action={canEdit && (
           <Button onClick={() => setModal(true)}><Plus size={16} /> Add Vehicle</Button>
         )}

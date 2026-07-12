@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Truck, Users, Route, Wrench, TrendingUp, AlertTriangle } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { useAuth } from '../context/AuthContext';
+import { ROLE_DESCRIPTION } from '../lib/permissions';
 import api from '../lib/api';
 import { Card, PageHeader, LoadingSpinner } from '../components/UI';
 import { StatusBadge } from '../components/StatusBadge';
@@ -9,6 +11,7 @@ import { formatDate } from '../lib/utils';
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#94a3b8'];
 
 export default function Dashboard() {
+  const { user } = useAuth();
   const [data, setData] = useState(null);
   const [filters, setFilters] = useState({ type: '', status: '', region: '' });
   const [loading, setLoading] = useState(true);
@@ -51,7 +54,7 @@ export default function Dashboard() {
     <div>
       <PageHeader
         title="Operations Dashboard"
-        subtitle="Real-time overview of your fleet operations"
+        subtitle={ROLE_DESCRIPTION[user?.role] || 'Real-time overview of your fleet operations'}
       />
 
       {/* Filters */}

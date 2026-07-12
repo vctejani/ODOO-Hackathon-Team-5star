@@ -5,7 +5,7 @@ import { authenticate, authorize } from '../middleware/auth.js';
 const router = express.Router();
 router.use(authenticate);
 
-router.get('/fuel', async (req, res) => {
+router.get('/fuel', authorize('FLEET_MANAGER', 'FINANCIAL_ANALYST'), async (req, res) => {
   try {
     const { vehicleId } = req.query;
     const where = vehicleId ? { vehicleId } : {};
@@ -21,7 +21,7 @@ router.get('/fuel', async (req, res) => {
   }
 });
 
-router.get('/expenses', async (req, res) => {
+router.get('/expenses', authorize('FLEET_MANAGER', 'FINANCIAL_ANALYST'), async (req, res) => {
   try {
     const { vehicleId, type } = req.query;
     const where = {};
@@ -39,7 +39,7 @@ router.get('/expenses', async (req, res) => {
   }
 });
 
-router.post('/fuel', authorize('FLEET_MANAGER', 'FINANCIAL_ANALYST', 'DRIVER'), async (req, res) => {
+router.post('/fuel', authorize('FLEET_MANAGER', 'FINANCIAL_ANALYST'), async (req, res) => {
   try {
     const { vehicleId, tripId, liters, cost, date } = req.body;
 
