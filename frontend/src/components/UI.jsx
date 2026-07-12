@@ -9,7 +9,7 @@ export function Modal({ open, onClose, title, children, wide }) {
       <div className={`relative w-full ${wide ? 'max-w-2xl' : 'max-w-lg'} bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in-95 duration-200`}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{title}</h2>
-          <button onClick={onClose} className="cursor-target p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors">
             <X size={18} />
           </button>
         </div>
@@ -30,7 +30,7 @@ export function Button({ children, variant = 'primary', className = '', ...props
 
   return (
     <button
-      className={`cursor-target inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed ${variants[variant]} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed ${variants[variant]} ${className}`}
       {...props}
     >
       {children}

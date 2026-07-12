@@ -3,7 +3,6 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import Layout from './components/Layout';
 import ClickSpark from './components/ClickSpark';
-import TargetCursor from './components/TargetCursor';
 import Login from './pages/Login';
 import Landing from './pages/Landing';
 import Dashboard from './pages/Dashboard';
@@ -64,19 +63,11 @@ export default function App() {
     <ThemeProvider>
       <AuthProvider>
         <BrowserRouter>
-          <TargetCursor
-            targetSelector=".cursor-target, a, button, [role='button'], input:not([type='hidden']), select, textarea"
-            spinDuration={2}
-            hideDefaultCursor
-            parallaxOn
-            cursorColor="#ffffff"
-            cursorColorOnTarget="#60a5fa"
-          />
           <ClickSpark
-            sparkColor="#2563eb"
-            sparkSize={22}
-            sparkRadius={80}
-            sparkCount={8}
+            sparkColor="#7C3AED"
+            sparkSize={18}
+            sparkRadius={15}
+            sparkCount={9}
             duration={400}
           >
             <div className="min-h-screen w-full">
