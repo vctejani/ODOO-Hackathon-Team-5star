@@ -18,7 +18,7 @@ TransitOps is structured into isolated, decoupled layers to ensure horizontal sc
 ```mermaid
 graph TD
     %% Client Layer
-    subgraph Client Layer (React 19 + Tailwind 4)
+    subgraph "Client Layer (React 19 + Tailwind 4)"
         A[Vite Dev Server] --> B(Interactive Layout & Nav)
         B --> C[Operations Dashboard]
         B --> D[Vehicles Registry]
@@ -33,7 +33,7 @@ graph TD
     B -. JWT Bearer Auth .-> J(Express Middleware)
 
     %% Backend Layer
-    subgraph Backend Layer (Node.js + Express)
+    subgraph "Backend Layer (Node.js + Express)"
         J --> K[Auth Controller]
         J --> L[User / Employee API]
         J --> M[Vehicles & Maintenance API]
@@ -44,7 +44,7 @@ graph TD
     end
 
     %% Database Layer
-    subgraph Database Layer (Prisma ORM)
+    subgraph "Database Layer (Prisma ORM)"
         K & L & M & N & O & P & Q --> R[Neon Serverless PostgreSQL]
     end
     
