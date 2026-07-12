@@ -11,6 +11,7 @@ import { roleLabel, formatDate } from '../lib/utils';
 export default function Employees() {
   const { user } = useAuth();
   const [employees, setEmployees] = useState([]);
+  const [driverTotal, setDriverTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -49,8 +50,12 @@ export default function Employees() {
   const fetchEmployees = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/users');
-      setEmployees(res.data);
+      const [usersRes, driversRes] = await Promise.all([
+        api.get('/users'),
+        api.get('/drivers'),
+      ]);
+      setEmployees(usersRes.data);
+      setDriverTotal(driversRes.data.length);
     } catch (err) {
       console.error('Failed to fetch employees', err);
     } finally {
@@ -118,7 +123,7 @@ export default function Employees() {
   // Stats computation
   const stats = {
     total: employees.length,
-    drivers: employees.filter((e) => e.role === 'DRIVER').length,
+    drivers: driverTotal,
     safetyOfficers: employees.filter((e) => e.role === 'SAFETY_OFFICER').length,
     analysts: employees.filter((e) => e.role === 'FINANCIAL_ANALYST').length,
   };
