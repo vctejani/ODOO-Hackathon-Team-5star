@@ -1,7 +1,8 @@
 import express from 'express';
-import PDFDocument from 'pdfkit';
 import prisma from '../lib/prisma.js';
 import { authenticate, authorize } from '../middleware/auth.js';
+import { buildVehicleReportPdf, getVehicleReportFilename } from '../lib/vehicleReportPdf.js';
+import { buildFleetReportPdf, gatherFleetReportData, getFleetReportFilename } from '../lib/fleetReportPdf.js';
 
 const router = express.Router();
 router.use(authenticate);
@@ -115,34 +116,51 @@ router.get('/export/csv', authorize('FLEET_MANAGER', 'FINANCIAL_ANALYST'), async
   }
 });
 
-router.get('/export/pdf', authorize('FLEET_MANAGER', 'FINANCIAL_ANALYST'), async (req, res) => {
+router.get('/export/pdf/vehicle/:vehicleId', authorize('FLEET_MANAGER', 'FINANCIAL_ANALYST'), async (req, res) => {
   try {
-    const analytics = await getVehicleAnalytics();
-    const doc = new PDFDocument({ margin: 50 });
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'attachment; filename=transitops-report.pdf');
-    doc.pipe(res);
-
-    doc.fontSize(20).text('TransitOps Fleet Report', { align: 'center' });
-    doc.moveDown();
-    doc.fontSize(10).text(`Generated: ${new Date().toLocaleString()}`, { align: 'center' });
-    doc.moveDown(2);
-
-    const totalCost = analytics.reduce((s, v) => s + v.operationalCost, 0);
-    doc.fontSize(12).text(`Total Operational Cost: $${totalCost.toFixed(2)}`);
-    doc.text(`Vehicles: ${analytics.length}`);
-    doc.moveDown();
-
-    analytics.forEach((v) => {
-      doc.fontSize(11).text(`${v.registrationNumber} - ${v.name}`, { underline: true });
-      doc.fontSize(9)
-        .text(`Status: ${v.status} | Op. Cost: $${v.operationalCost.toFixed(2)} | ROI: ${v.roi}%`)
-        .text(`Fuel Efficiency: ${v.fuelEfficiency} km/L | Trips: ${v.completedTrips}`);
-      doc.moveDown(0.5);
+    const vehicle = await prisma.vehicle.findUnique({
+      where: { id: req.params.vehicleId },
+      include: {
+        trips: {
+          include: { driver: true },
+          orderBy: { createdAt: 'desc' },
+        },
+        maintenanceLogs: { orderBy: { startDate: 'desc' } },
+        fuelLogs: {
+          include: { trip: true },
+          orderBy: { date: 'desc' },
+        },
+        expenses: { orderBy: { date: 'desc' } },
+      },
     });
 
-    doc.end();
+    if (!vehicle) {
+      return res.status(404).json({ error: 'Vehicle not found' });
+    }
+
+    const pdfBuffer = await buildVehicleReportPdf(vehicle);
+    const filename = getVehicleReportFilename(vehicle.registrationNumber);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(pdfBuffer);
   } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/export/pdf', authorize('FLEET_MANAGER', 'FINANCIAL_ANALYST'), async (req, res) => {
+  try {
+    const data = await gatherFleetReportData();
+    const pdfBuffer = await buildFleetReportPdf(data);
+    const filename = getFleetReportFilename();
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(pdfBuffer);
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 });
