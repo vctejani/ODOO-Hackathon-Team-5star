@@ -46,7 +46,7 @@ function AppRoutes() {
         <Route path="maintenance" element={<RoleRoute path="/maintenance"><Maintenance /></RoleRoute>} />
         <Route path="expenses" element={<RoleRoute path="/expenses"><Expenses /></RoleRoute>} />
         <Route path="reports" element={<RoleRoute path="/reports"><Reports /></RoleRoute>} />
-        <Route path="employees" element={<Employees />} />
+        <Route path="employees" element={<RoleRoute path="/employees"><Employees /></RoleRoute>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

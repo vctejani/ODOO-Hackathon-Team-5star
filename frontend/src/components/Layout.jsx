@@ -17,6 +17,7 @@ const ICONS = {
   Wrench,
   Fuel,
   BarChart3,
+  UserPlus,
 };
 
 const navItems = [
