@@ -40,6 +40,7 @@ A full-stack transport operations platform built for the Odoo VR Hackathon. Digi
 - Node.js 18+
 - Docker (for PostgreSQL) OR a local PostgreSQL instance
 
+//temporary using sql lite
 ### 1. Start PostgreSQL
 
 ```bash
