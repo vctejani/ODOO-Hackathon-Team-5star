@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Download, FileText, TrendingUp, Fuel, DollarSign } from 'lucide-react';
+import { Download, FileText, TrendingUp, Fuel, DollarSign, FileDown } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import api from '../lib/api';
 import { Button, Card, PageHeader, LoadingSpinner } from '../components/UI';
@@ -8,6 +8,7 @@ import { formatCurrency } from '../lib/utils';
 export default function Reports() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [downloadingId, setDownloadingId] = useState(null);
 
   useEffect(() => {
     api.get('/reports/analytics')
@@ -29,17 +30,44 @@ export default function Reports() {
     a.click();
   };
 
+  const exportVehiclePDF = async (vehicleId, registrationNumber) => {
+    setDownloadingId(vehicleId);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/reports/export/pdf/vehicle/${vehicleId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Failed to generate report');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `TransitOps-${registrationNumber}-Report.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(err.message || 'Failed to download vehicle report');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
   const exportPDF = async () => {
     const token = localStorage.getItem('token');
     const res = await fetch('/api/reports/export/pdf', {
       headers: { Authorization: `Bearer ${token}` },
     });
+    if (!res.ok) return;
     const blob = await res.blob();
+    const disposition = res.headers.get('Content-Disposition') || '';
+    const match = disposition.match(/filename="?([^"]+)"?/);
+    const filename = match?.[1] || `TransitOps-Fleet-Report-${new Date().toISOString().slice(0, 10)}.pdf`;
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'transitops-report.pdf';
+    a.download = filename;
     a.click();
+    URL.revokeObjectURL(url);
   };
 
   if (loading) return <LoadingSpinner />;
@@ -124,6 +152,7 @@ export default function Reports() {
                 <th className="px-6 py-3">Efficiency</th>
                 <th className="px-6 py-3">Revenue</th>
                 <th className="px-6 py-3">ROI</th>
+                <th className="px-6 py-3">Report</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -143,6 +172,17 @@ export default function Reports() {
                     <span className={`font-semibold ${v.roi >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                       {v.roi}%
                     </span>
+                  </td>
+                  <td className="px-6 py-3.5">
+                    <Button
+                      variant="secondary"
+                      className="text-xs py-1.5 px-3"
+                      disabled={downloadingId === v.id}
+                      onClick={() => exportVehiclePDF(v.id, v.registrationNumber)}
+                    >
+                      <FileDown size={14} />
+                      {downloadingId === v.id ? 'Generating…' : 'Download PDF'}
+                    </Button>
                   </td>
                 </tr>
               ))}
