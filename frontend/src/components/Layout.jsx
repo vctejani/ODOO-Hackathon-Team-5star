@@ -20,6 +20,7 @@ const ICONS = {
   Fuel,
   BarChart3,
   UserPlus,
+  Calendar,
 };
 
 const navItems = [

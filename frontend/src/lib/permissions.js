@@ -16,6 +16,7 @@ export const NAV_ITEMS = [
   { to: '/expenses', icon: 'Fuel', label: 'Fuel & Expenses', roles: [ROLES.FLEET_MANAGER, ROLES.FINANCIAL_ANALYST] },
   { to: '/reports', icon: 'BarChart3', label: 'Reports', roles: [ROLES.FLEET_MANAGER, ROLES.FINANCIAL_ANALYST] },
   { to: '/employees', icon: 'UserPlus', label: 'Employees', roles: [ROLES.FLEET_MANAGER] },
+  { to: '/off-duty', icon: 'Calendar', label: 'Off-Duty', roles: Object.values(ROLES) },
 ];
 
 export const ROUTE_ACCESS = {
@@ -27,6 +28,7 @@ export const ROUTE_ACCESS = {
   '/expenses': [ROLES.FLEET_MANAGER, ROLES.FINANCIAL_ANALYST],
   '/reports': [ROLES.FLEET_MANAGER, ROLES.FINANCIAL_ANALYST],
   '/employees': [ROLES.FLEET_MANAGER],
+  '/off-duty': Object.values(ROLES),
 };
 
 export const canAccessRoute = (path, role) =>

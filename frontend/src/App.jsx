@@ -14,6 +14,7 @@ import Maintenance from './pages/Maintenance';
 import Expenses from './pages/Expenses';
 import Reports from './pages/Reports';
 import Employees from './pages/Employees';
+import OffDuty from './pages/OffDuty';
 import { LoadingSpinner } from './components/UI';
 import { canAccessRoute, ROLE_HOME } from './lib/permissions';
 
@@ -51,6 +52,7 @@ function AppRoutes() {
         <Route path="expenses" element={<RoleRoute path="/expenses"><Expenses /></RoleRoute>} />
         <Route path="reports" element={<RoleRoute path="/reports"><Reports /></RoleRoute>} />
         <Route path="employees" element={<RoleRoute path="/employees"><Employees /></RoleRoute>} />
+        <Route path="off-duty" element={<RoleRoute path="/off-duty"><OffDuty /></RoleRoute>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

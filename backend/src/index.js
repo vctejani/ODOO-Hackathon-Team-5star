@@ -11,6 +11,7 @@ import expenseRoutes from './routes/expenses.js';
 import dashboardRoutes from './routes/dashboard.js';
 import reportRoutes from './routes/reports.js';
 import notificationRoutes from './routes/notifications.js';
+import offDutyRoutes from './routes/offDuty.js';
 
 dotenv.config();
 
@@ -32,6 +33,7 @@ app.use('/api/expenses', expenseRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/off-duty', offDutyRoutes);
 
 app.use((err, _req, res, _next) => {
   console.error(err);

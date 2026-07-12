@@ -41,8 +41,36 @@ router.get('/', authorize('FLEET_MANAGER', 'SAFETY_OFFICER'), async (req, res) =
 
 router.get('/available', authorize('FLEET_MANAGER', 'DRIVER'), async (req, res) => {
   try {
+    const now = new Date();
+    
+    // Get all users who have an ACCEPTED off-duty request currently active
+    const activeOffDutyRequests = await prisma.offDutyRequest.findMany({
+      where: {
+        status: 'ACCEPTED',
+        startDate: { lte: now },
+        endDate: { gte: now },
+      },
+      select: {
+        user: {
+          select: {
+            licenseNumber: true,
+          }
+        }
+      }
+    });
+
+    const offDutyLicenses = activeOffDutyRequests
+      .map((r) => r.user?.licenseNumber)
+      .filter(Boolean);
+
     const drivers = await prisma.driver.findMany({
-      where: { status: 'AVAILABLE', deleted: false },
+      where: {
+        status: 'AVAILABLE',
+        deleted: false,
+        NOT: {
+          licenseNumber: { in: offDutyLicenses }
+        }
+      },
       orderBy: { name: 'asc' },
     });
     const available = drivers.filter((d) => isLicenseValid(d.licenseExpiry));

@@ -76,6 +76,7 @@ model User {
   // Relations
   notifications       Notification[]
   driverProfile       Driver?
+  offDutyRequests     OffDutyRequest[]
 }
 
 model Vehicle {
@@ -195,4 +196,22 @@ model Notification {
   actionData  String?  // e.g. JSON string '{"tripId": "..."}'
   actionDone  Boolean  @default(false)
   createdAt   DateTime @default(now())
+}
+
+enum OffDutyStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+model OffDutyRequest {
+  id        String        @id @default(uuid())
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  startDate DateTime
+  endDate   DateTime
+  reason    String?
+  status    OffDutyStatus @default(PENDING)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 }
