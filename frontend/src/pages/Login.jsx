@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Truck, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Button, Input } from '../components/UI';
+import { ROLE_HOME } from '../lib/permissions';
 
 const demoAccounts = [
   { role: 'Fleet Manager', email: 'fleet@transitops.com' },
@@ -25,8 +26,8 @@ export default function Login() {
     setError('');
     setLoading(true);
     try {
-      await login(email, password);
-      navigate('/');
+      const loggedInUser = await login(email, password);
+      navigate(ROLE_HOME[loggedInUser.role] || '/');
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed');
     } finally {

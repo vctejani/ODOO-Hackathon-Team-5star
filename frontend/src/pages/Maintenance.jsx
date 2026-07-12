@@ -5,6 +5,7 @@ import { Button, Card, PageHeader, Modal, Input, Select, LoadingSpinner, EmptySt
 import { StatusBadge } from '../components/StatusBadge';
 import { formatCurrency, formatDate } from '../lib/utils';
 import { useAuth } from '../context/AuthContext';
+import { canManageMaintenance } from '../lib/permissions';
 
 export default function Maintenance() {
   const { user } = useAuth();
@@ -15,7 +16,7 @@ export default function Maintenance() {
   const [form, setForm] = useState({ vehicleId: '', description: '', cost: '' });
   const [error, setError] = useState('');
 
-  const canEdit = user?.role === 'FLEET_MANAGER';
+  const canEdit = canManageMaintenance(user?.role);
 
   const fetchData = async () => {
     const [logsRes, vehiclesRes] = await Promise.all([
@@ -57,7 +58,7 @@ export default function Maintenance() {
     <div>
       <PageHeader
         title="Maintenance Logs"
-        subtitle="Track vehicle maintenance and service records"
+        subtitle={canEdit ? 'Track vehicle maintenance and service records' : 'Review maintenance costs and service history'}
         action={canEdit && (
           <Button onClick={() => setModal(true)}><Plus size={16} /> New Maintenance</Button>
         )}

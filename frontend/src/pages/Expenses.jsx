@@ -4,6 +4,7 @@ import api from '../lib/api';
 import { Button, Card, PageHeader, Modal, Input, Select, LoadingSpinner } from '../components/UI';
 import { formatCurrency, formatDate } from '../lib/utils';
 import { useAuth } from '../context/AuthContext';
+import { canManageExpenses } from '../lib/permissions';
 
 export default function Expenses() {
   const { user } = useAuth();
@@ -17,7 +18,7 @@ export default function Expenses() {
   const [fuelForm, setFuelForm] = useState({ vehicleId: '', liters: '', cost: '', date: '' });
   const [expenseForm, setExpenseForm] = useState({ vehicleId: '', type: 'TOLL', amount: '', description: '', date: '' });
 
-  const canEdit = ['FLEET_MANAGER', 'FINANCIAL_ANALYST', 'DRIVER'].includes(user?.role);
+  const canEdit = canManageExpenses(user?.role);
 
   const fetchData = async () => {
     const [fuelRes, expRes, vehRes] = await Promise.all([

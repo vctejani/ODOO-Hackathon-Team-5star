@@ -5,7 +5,7 @@ import { authenticate, authorize } from '../middleware/auth.js';
 const router = express.Router();
 router.use(authenticate);
 
-router.get('/', async (req, res) => {
+router.get('/', authorize('FLEET_MANAGER', 'FINANCIAL_ANALYST'), async (req, res) => {
   try {
     const { status, vehicleId } = req.query;
     const where = {};

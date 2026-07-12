@@ -5,6 +5,7 @@ import { Button, Card, PageHeader, Modal, Input, Select, LoadingSpinner, EmptySt
 import { StatusBadge } from '../components/StatusBadge';
 import { formatDate } from '../lib/utils';
 import { useAuth } from '../context/AuthContext';
+import { canManageDrivers } from '../lib/permissions';
 
 export default function Drivers() {
   const { user } = useAuth();
@@ -18,7 +19,7 @@ export default function Drivers() {
   });
   const [error, setError] = useState('');
 
-  const canEdit = ['FLEET_MANAGER', 'SAFETY_OFFICER'].includes(user?.role);
+  const canEdit = canManageDrivers(user?.role);
 
   const fetchDrivers = () => {
     api.get('/drivers').then((res) => setDrivers(res.data)).finally(() => setLoading(false));
@@ -56,7 +57,7 @@ export default function Drivers() {
     <div>
       <PageHeader
         title="Driver Management"
-        subtitle="Track driver profiles, licenses, and safety scores"
+        subtitle={canEdit ? 'Manage driver compliance, licenses, and safety scores' : 'View driver profiles for operational oversight'}
         action={canEdit && (
           <Button onClick={() => setModal(true)}><Plus size={16} /> Add Driver</Button>
         )}

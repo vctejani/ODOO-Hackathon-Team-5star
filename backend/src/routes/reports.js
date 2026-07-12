@@ -1,7 +1,7 @@
 import express from 'express';
 import PDFDocument from 'pdfkit';
 import prisma from '../lib/prisma.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
 router.use(authenticate);
@@ -50,7 +50,7 @@ async function getVehicleAnalytics() {
   });
 }
 
-router.get('/analytics', async (req, res) => {
+router.get('/analytics', authorize('FLEET_MANAGER', 'FINANCIAL_ANALYST'), async (req, res) => {
   try {
     const vehicleAnalytics = await getVehicleAnalytics();
 
@@ -90,7 +90,7 @@ router.get('/analytics', async (req, res) => {
   }
 });
 
-router.get('/export/csv', async (req, res) => {
+router.get('/export/csv', authorize('FLEET_MANAGER', 'FINANCIAL_ANALYST'), async (req, res) => {
   try {
     const analytics = await getVehicleAnalytics();
     const headers = [
@@ -115,7 +115,7 @@ router.get('/export/csv', async (req, res) => {
   }
 });
 
-router.get('/export/pdf', async (req, res) => {
+router.get('/export/pdf', authorize('FLEET_MANAGER', 'FINANCIAL_ANALYST'), async (req, res) => {
   try {
     const analytics = await getVehicleAnalytics();
     const doc = new PDFDocument({ margin: 50 });

@@ -3,26 +3,32 @@ import {
   LayoutDashboard, Truck, Users, Route, Wrench, Fuel,
   BarChart3, LogOut, Moon, Sun, Menu, X, Bell,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { roleLabel } from '../lib/utils';
+import { NAV_ITEMS, getNavForRole } from '../lib/permissions';
 
-const navItems = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/vehicles', icon: Truck, label: 'Vehicles' },
-  { to: '/drivers', icon: Users, label: 'Drivers' },
-  { to: '/trips', icon: Route, label: 'Trips' },
-  { to: '/maintenance', icon: Wrench, label: 'Maintenance' },
-  { to: '/expenses', icon: Fuel, label: 'Fuel & Expenses' },
-  { to: '/reports', icon: BarChart3, label: 'Reports' },
-];
+const ICONS = {
+  LayoutDashboard,
+  Truck,
+  Users,
+  Route,
+  Wrench,
+  Fuel,
+  BarChart3,
+};
 
 export default function Layout() {
   const { user, logout } = useAuth();
   const { dark, toggle } = useTheme();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const navItems = useMemo(() => {
+    const items = getNavForRole(user?.role);
+    return items.map((item) => ({ ...item, icon: ICONS[item.icon] }));
+  }, [user?.role]);
 
   const handleLogout = () => {
     logout();
@@ -90,12 +96,10 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950">
-      {/* Desktop sidebar */}
       <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800">
         <NavContent />
       </aside>
 
-      {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div className="lg:hidden fixed inset-0 z-40">
           <div className="absolute inset-0 bg-slate-900/60" onClick={() => setSidebarOpen(false)} />
@@ -108,7 +112,6 @@ export default function Layout() {
         </div>
       )}
 
-      {/* Main content */}
       <div className="flex-1 lg:pl-64">
         <header className="sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-b border-slate-200 dark:border-slate-800 px-4 sm:px-8 py-4">
           <div className="flex items-center justify-between">

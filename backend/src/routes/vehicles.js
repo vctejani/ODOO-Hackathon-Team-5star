@@ -5,7 +5,7 @@ import { authenticate, authorize } from '../middleware/auth.js';
 const router = express.Router();
 router.use(authenticate);
 
-router.get('/', async (req, res) => {
+router.get('/', authorize('FLEET_MANAGER', 'FINANCIAL_ANALYST'), async (req, res) => {
   try {
     const { type, status, region } = req.query;
     const where = {};
@@ -23,7 +23,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.get('/available', async (req, res) => {
+router.get('/available', authorize('FLEET_MANAGER', 'DRIVER'), async (req, res) => {
   try {
     const vehicles = await prisma.vehicle.findMany({
       where: { status: 'AVAILABLE' },
@@ -35,7 +35,7 @@ router.get('/available', async (req, res) => {
   }
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', authorize('FLEET_MANAGER', 'FINANCIAL_ANALYST'), async (req, res) => {
   try {
     const vehicle = await prisma.vehicle.findUnique({
       where: { id: req.params.id },

@@ -5,6 +5,7 @@ import { Button, Card, PageHeader, Modal, Input, Select, LoadingSpinner, EmptySt
 import { StatusBadge } from '../components/StatusBadge';
 import { formatDate } from '../lib/utils';
 import { useAuth } from '../context/AuthContext';
+import { canManageTrips } from '../lib/permissions';
 
 export default function Trips() {
   const { user } = useAuth();
@@ -22,7 +23,7 @@ export default function Trips() {
   const [completeForm, setCompleteForm] = useState({ finalOdometer: '', fuelConsumed: '', actualDistance: '' });
   const [error, setError] = useState('');
 
-  const canManage = ['FLEET_MANAGER', 'DRIVER'].includes(user?.role);
+  const canManage = canManageTrips(user?.role);
 
   const fetchData = async () => {
     const params = filterStatus ? `?status=${filterStatus}` : '';
@@ -89,7 +90,7 @@ export default function Trips() {
     <div>
       <PageHeader
         title="Trip Management"
-        subtitle="Create, dispatch, and track deliveries"
+        subtitle={canManage ? 'Create, dispatch, and track deliveries' : 'Monitor active and pending deliveries'}
         action={canManage && (
           <Button onClick={() => setModal(true)}><Plus size={16} /> Create Trip</Button>
         )}

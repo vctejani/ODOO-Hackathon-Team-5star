@@ -6,7 +6,7 @@ import { validateTripDispatch } from '../utils/rules.js';
 const router = express.Router();
 router.use(authenticate);
 
-router.get('/', async (req, res) => {
+router.get('/', authorize('FLEET_MANAGER', 'DRIVER'), async (req, res) => {
   try {
     const { status } = req.query;
     const where = status ? { status } : {};
@@ -22,7 +22,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', authorize('FLEET_MANAGER', 'DRIVER'), async (req, res) => {
   try {
     const trip = await prisma.trip.findUnique({
       where: { id: req.params.id },
