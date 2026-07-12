@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
+import Landing from './pages/Landing';
 import Dashboard from './pages/Dashboard';
 import Vehicles from './pages/Vehicles';
 import Drivers from './pages/Drivers';
@@ -37,9 +38,10 @@ function RoleRoute({ path, children }) {
 function AppRoutes() {
   return (
     <Routes>
+      <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-        <Route index element={<RoleRoute path="/"><Dashboard /></RoleRoute>} />
+        <Route path="dashboard" element={<RoleRoute path="/dashboard"><Dashboard /></RoleRoute>} />
         <Route path="vehicles" element={<RoleRoute path="/vehicles"><Vehicles /></RoleRoute>} />
         <Route path="drivers" element={<RoleRoute path="/drivers"><Drivers /></RoleRoute>} />
         <Route path="trips" element={<RoleRoute path="/trips"><Trips /></RoleRoute>} />

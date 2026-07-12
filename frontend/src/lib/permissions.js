@@ -8,7 +8,7 @@ export const ROLES = {
 export const isFleetManager = (role) => role === ROLES.FLEET_MANAGER;
 
 export const NAV_ITEMS = [
-  { to: '/', icon: 'LayoutDashboard', label: 'Dashboard', roles: Object.values(ROLES) },
+  { to: '/dashboard', icon: 'LayoutDashboard', label: 'Dashboard', roles: Object.values(ROLES) },
   { to: '/vehicles', icon: 'Truck', label: 'Vehicles', roles: [ROLES.FLEET_MANAGER, ROLES.FINANCIAL_ANALYST] },
   { to: '/drivers', icon: 'Users', label: 'Drivers', roles: [ROLES.FLEET_MANAGER, ROLES.SAFETY_OFFICER] },
   { to: '/trips', icon: 'Route', label: 'Trips', roles: [ROLES.FLEET_MANAGER, ROLES.DRIVER] },
@@ -19,7 +19,7 @@ export const NAV_ITEMS = [
 ];
 
 export const ROUTE_ACCESS = {
-  '/': Object.values(ROLES),
+  '/dashboard': Object.values(ROLES),
   '/vehicles': [ROLES.FLEET_MANAGER, ROLES.FINANCIAL_ANALYST],
   '/drivers': [ROLES.FLEET_MANAGER, ROLES.SAFETY_OFFICER],
   '/trips': [ROLES.FLEET_MANAGER, ROLES.DRIVER],
@@ -44,7 +44,7 @@ export const canManageExpenses = (role) => isFleetManager(role) || role === ROLE
 export const canExportReports = (role) => isFleetManager(role) || role === ROLES.FINANCIAL_ANALYST;
 
 export const ROLE_HOME = {
-  [ROLES.FLEET_MANAGER]: '/',
+  [ROLES.FLEET_MANAGER]: '/dashboard',
   [ROLES.DRIVER]: '/trips',
   [ROLES.SAFETY_OFFICER]: '/drivers',
   [ROLES.FINANCIAL_ANALYST]: '/reports',
