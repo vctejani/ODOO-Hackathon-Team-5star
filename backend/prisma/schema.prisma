@@ -53,6 +53,7 @@ model User {
   password            String
   name                String
   role                Role
+  deleted             Boolean   @default(false)
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
@@ -100,6 +101,7 @@ model Driver {
   contactNumber    String
   safetyScore      Float        @default(100)
   status           DriverStatus @default(AVAILABLE)
+  deleted          Boolean      @default(false)
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
   trips            Trip[]

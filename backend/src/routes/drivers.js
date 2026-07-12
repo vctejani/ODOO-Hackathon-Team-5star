@@ -10,7 +10,7 @@ router.use(authenticate);
 router.get('/', authorize('FLEET_MANAGER', 'SAFETY_OFFICER'), async (req, res) => {
   try {
     const { status, search } = req.query;
-    const where = {};
+    const where = { deleted: false };
     if (status) where.status = status;
     if (search) {
       where.OR = [
@@ -41,7 +41,7 @@ router.get('/', authorize('FLEET_MANAGER', 'SAFETY_OFFICER'), async (req, res) =
 router.get('/available', authorize('FLEET_MANAGER', 'DRIVER'), async (req, res) => {
   try {
     const drivers = await prisma.driver.findMany({
-      where: { status: 'AVAILABLE' },
+      where: { status: 'AVAILABLE', deleted: false },
       orderBy: { name: 'asc' },
     });
     const available = drivers.filter((d) => isLicenseValid(d.licenseExpiry));
@@ -169,6 +169,35 @@ router.put('/:id', authorize('FLEET_MANAGER', 'SAFETY_OFFICER'), async (req, res
     }
 
     res.json(driver);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete('/:id', authorize('FLEET_MANAGER'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const driver = await prisma.driver.findUnique({ where: { id } });
+    if (!driver || driver.deleted) {
+      return res.status(404).json({ error: 'Driver not found' });
+    }
+
+    await prisma.driver.update({
+      where: { id },
+      data: { deleted: true, status: 'SUSPENDED' }
+    });
+
+    if (driver.licenseNumber) {
+      const user = await prisma.user.findUnique({ where: { licenseNumber: driver.licenseNumber } });
+      if (user) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { deleted: true }
+        });
+      }
+    }
+
+    res.json({ message: 'Driver deleted successfully.' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

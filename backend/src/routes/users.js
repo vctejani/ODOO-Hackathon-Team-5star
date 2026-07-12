@@ -13,6 +13,7 @@ router.use(authorize('FLEET_MANAGER'));
 router.get('/', async (req, res) => {
   try {
     const users = await prisma.user.findMany({
+      where: { deleted: false },
       select: {
         id: true,
         email: true,
@@ -32,6 +33,7 @@ router.get('/', async (req, res) => {
     });
 
     const drivers = await prisma.driver.findMany({
+      where: { deleted: false },
       select: {
         licenseNumber: true,
         safetyScore: true,
@@ -169,7 +171,7 @@ router.delete('/:id', async (req, res) => {
     const { id } = req.params;
 
     const user = await prisma.user.findUnique({ where: { id } });
-    if (!user) {
+    if (!user || user.deleted) {
       return res.status(404).json({ error: 'User not found.' });
     }
 
@@ -178,26 +180,21 @@ router.delete('/:id', async (req, res) => {
       return res.status(400).json({ error: 'Admins cannot delete their own account.' });
     }
 
-    // Handle Driver table synchronization if the deleted user is a DRIVER
+    // Handle Driver table soft-deletion if the deleted user is a DRIVER
     if (user.role === 'DRIVER' && user.licenseNumber) {
       const driver = await prisma.driver.findUnique({ where: { licenseNumber: user.licenseNumber } });
       if (driver) {
-        // Check if driver has active or past trips
-        const tripCount = await prisma.trip.count({ where: { driverId: driver.id } });
-        if (tripCount > 0) {
-          // Trips exist, so suspend driver instead of deletion to preserve historical data
-          await prisma.driver.update({
-            where: { id: driver.id },
-            data: { status: 'SUSPENDED' },
-          });
-        } else {
-          // No trips, safe to delete from Driver table
-          await prisma.driver.delete({ where: { id: driver.id } });
-        }
+        await prisma.driver.update({
+          where: { id: driver.id },
+          data: { deleted: true, status: 'SUSPENDED' },
+        });
       }
     }
 
-    await prisma.user.delete({ where: { id } });
+    await prisma.user.update({
+      where: { id },
+      data: { deleted: true },
+    });
     res.json({ message: 'User deleted successfully.' });
   } catch (err) {
     res.status(500).json({ error: err.message });

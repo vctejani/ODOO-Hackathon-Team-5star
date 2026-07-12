@@ -21,7 +21,7 @@ router.get('/', async (req, res) => {
       activeMaintenance,
     ] = await Promise.all([
       prisma.vehicle.findMany({ where: vehicleWhere }),
-      prisma.driver.findMany(),
+      prisma.driver.findMany({ where: { deleted: false } }),
       prisma.trip.findMany({ include: { vehicle: true, driver: true } }),
       prisma.maintenanceLog.count({ where: { status: 'ACTIVE' } }),
     ]);

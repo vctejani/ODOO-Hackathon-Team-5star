@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Search, Users, AlertTriangle } from 'lucide-react';
+import { Plus, Search, Users, AlertTriangle, Trash2 } from 'lucide-react';
 import api from '../lib/api';
 import { Button, Card, PageHeader, Modal, Input, Select, LoadingSpinner, EmptyState } from '../components/UI';
 import { StatusBadge } from '../components/StatusBadge';
@@ -49,6 +49,16 @@ export default function Drivers() {
     const newStatus = driver.status === 'SUSPENDED' ? 'AVAILABLE' : 'SUSPENDED';
     await api.put(`/drivers/${driver.id}`, { status: newStatus });
     fetchDrivers();
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this driver?')) return;
+    try {
+      await api.delete(`/drivers/${id}`);
+      fetchDrivers();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to delete driver');
+    }
   };
 
   if (loading) return <LoadingSpinner />;
@@ -123,9 +133,18 @@ export default function Drivers() {
                     <td className="px-6 py-4"><StatusBadge status={d.status} /></td>
                     {canEdit && (
                       <td className="px-6 py-4">
-                        <Button variant="ghost" className="text-xs" onClick={() => toggleSuspend(d)}>
-                          {d.status === 'SUSPENDED' ? 'Reinstate' : 'Suspend'}
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button variant="ghost" className="text-xs" onClick={() => toggleSuspend(d)}>
+                            {d.status === 'SUSPENDED' ? 'Reinstate' : 'Suspend'}
+                          </Button>
+                          <button
+                            onClick={() => handleDelete(d.id)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                            title="Delete Driver"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </td>
                     )}
                   </tr>
