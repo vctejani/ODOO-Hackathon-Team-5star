@@ -38,8 +38,12 @@ export default function Vehicles() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    const registrationNumberUpper = form.registrationNumber.trim().toUpperCase();
     try {
-      await api.post('/vehicles', form);
+      await api.post('/vehicles', {
+        ...form,
+        registrationNumber: registrationNumberUpper,
+      });
       setModal(false);
       setForm({ registrationNumber: '', name: '', type: 'Van', maxLoadCapacity: '', odometer: '', acquisitionCost: '', region: 'North' });
       fetchVehicles();
@@ -118,7 +122,7 @@ export default function Vehicles() {
       <Modal open={modal} onClose={() => setModal(false)} title="Register New Vehicle" wide>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Registration Number" value={form.registrationNumber} onChange={(e) => setForm({ ...form, registrationNumber: e.target.value })} required />
+            <Input label="Registration Number" value={form.registrationNumber} onChange={(e) => setForm({ ...form, registrationNumber: e.target.value.toUpperCase() })} required />
             <Input label="Vehicle Name/Model" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
             <Select label="Type" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
               <option value="Van">Van</option>

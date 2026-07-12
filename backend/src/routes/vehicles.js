@@ -54,15 +54,16 @@ router.get('/:id', authorize('FLEET_MANAGER', 'FINANCIAL_ANALYST'), async (req, 
 router.post('/', authorize('FLEET_MANAGER'), async (req, res) => {
   try {
     const { registrationNumber, name, type, maxLoadCapacity, odometer, acquisitionCost, region } = req.body;
+    const regNumUpper = registrationNumber.trim().toUpperCase();
 
-    const existing = await prisma.vehicle.findUnique({ where: { registrationNumber } });
+    const existing = await prisma.vehicle.findUnique({ where: { registrationNumber: regNumUpper } });
     if (existing) {
       return res.status(400).json({ error: 'Registration number must be unique' });
     }
 
     const vehicle = await prisma.vehicle.create({
       data: {
-        registrationNumber,
+        registrationNumber: regNumUpper,
         name,
         type,
         maxLoadCapacity: parseFloat(maxLoadCapacity),
@@ -80,10 +81,11 @@ router.post('/', authorize('FLEET_MANAGER'), async (req, res) => {
 router.put('/:id', authorize('FLEET_MANAGER'), async (req, res) => {
   try {
     const { registrationNumber, name, type, maxLoadCapacity, odometer, acquisitionCost, status, region } = req.body;
+    const regNumUpper = registrationNumber ? registrationNumber.trim().toUpperCase() : undefined;
 
-    if (registrationNumber) {
+    if (regNumUpper) {
       const existing = await prisma.vehicle.findFirst({
-        where: { registrationNumber, NOT: { id: req.params.id } },
+        where: { registrationNumber: regNumUpper, NOT: { id: req.params.id } },
       });
       if (existing) {
         return res.status(400).json({ error: 'Registration number must be unique' });
@@ -93,7 +95,7 @@ router.put('/:id', authorize('FLEET_MANAGER'), async (req, res) => {
     const vehicle = await prisma.vehicle.update({
       where: { id: req.params.id },
       data: {
-        ...(registrationNumber && { registrationNumber }),
+        ...(regNumUpper && { registrationNumber: regNumUpper }),
         ...(name && { name }),
         ...(type && { type }),
         ...(maxLoadCapacity !== undefined && { maxLoadCapacity: parseFloat(maxLoadCapacity) }),
