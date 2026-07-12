@@ -1,9 +1,38 @@
 import express from 'express';
 import prisma from '../lib/prisma.js';
 import { authenticate, authorize } from '../middleware/auth.js';
+import { calcFuelCost, ensureFuelPrice, getFuelPricePerLiter } from '../lib/fuelPrice.js';
 
 const router = express.Router();
 router.use(authenticate);
+
+router.get('/fuel-price', authorize('FLEET_MANAGER', 'FINANCIAL_ANALYST', 'DRIVER'), async (req, res) => {
+  try {
+    const setting = await ensureFuelPrice(prisma);
+    res.json(setting);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put('/fuel-price', authorize('FLEET_MANAGER', 'FINANCIAL_ANALYST'), async (req, res) => {
+  try {
+    const { pricePerLiter } = req.body;
+    const price = parseFloat(pricePerLiter);
+    if (!price || price <= 0) {
+      return res.status(400).json({ error: 'Fuel price must be greater than 0' });
+    }
+
+    const setting = await prisma.fuelPrice.upsert({
+      where: { id: 'current' },
+      update: { pricePerLiter: price },
+      create: { id: 'current', pricePerLiter: price },
+    });
+    res.json(setting);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 router.get('/fuel', authorize('FLEET_MANAGER', 'FINANCIAL_ANALYST'), async (req, res) => {
   try {
@@ -42,13 +71,18 @@ router.get('/expenses', authorize('FLEET_MANAGER', 'FINANCIAL_ANALYST'), async (
 router.post('/fuel', authorize('FLEET_MANAGER', 'FINANCIAL_ANALYST'), async (req, res) => {
   try {
     const { vehicleId, tripId, liters, cost, date } = req.body;
+    const litersNum = parseFloat(liters);
+    const pricePerLiter = await getFuelPricePerLiter(prisma);
+    const fuelCost = cost !== undefined && cost !== '' && cost !== null
+      ? parseFloat(cost)
+      : calcFuelCost(litersNum, pricePerLiter);
 
     const log = await prisma.fuelLog.create({
       data: {
         vehicleId,
         tripId: tripId || null,
-        liters: parseFloat(liters),
-        cost: parseFloat(cost),
+        liters: litersNum,
+        cost: fuelCost,
         date: date ? new Date(date) : new Date(),
       },
       include: { vehicle: true },
@@ -59,8 +93,8 @@ router.post('/fuel', authorize('FLEET_MANAGER', 'FINANCIAL_ANALYST'), async (req
         vehicleId,
         tripId: tripId || null,
         type: 'FUEL',
-        amount: parseFloat(cost),
-        description: `Fuel log: ${liters}L`,
+        amount: fuelCost,
+        description: `Fuel log: ${litersNum}L @ $${pricePerLiter}/L`,
         date: date ? new Date(date) : new Date(),
       },
     });

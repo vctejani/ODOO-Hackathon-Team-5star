@@ -3,7 +3,7 @@ import { Plus, Route, Send, CheckCircle, XCircle } from 'lucide-react';
 import api from '../lib/api';
 import { Button, Card, PageHeader, Modal, Input, Select, LoadingSpinner, EmptyState } from '../components/UI';
 import { StatusBadge } from '../components/StatusBadge';
-import { formatDate } from '../lib/utils';
+import { formatDate, formatCurrency } from '../lib/utils';
 import { useAuth } from '../context/AuthContext';
 import { canManageTrips } from '../lib/permissions';
 
@@ -21,20 +21,27 @@ export default function Trips() {
     cargoWeight: '', plannedDistance: '', revenue: '',
   });
   const [completeForm, setCompleteForm] = useState({ finalOdometer: '', fuelConsumed: '', actualDistance: '' });
+  const [fuelPricePerLiter, setFuelPricePerLiter] = useState(0);
   const [error, setError] = useState('');
 
   const canManage = canManageTrips(user?.role);
+  const fuelLiters = parseFloat(completeForm.fuelConsumed) || 0;
+  const estimatedFuelCost = fuelLiters > 0 && fuelPricePerLiter > 0
+    ? Math.round(fuelLiters * fuelPricePerLiter * 100) / 100
+    : 0;
 
   const fetchData = async () => {
     const params = filterStatus ? `?status=${filterStatus}` : '';
-    const [tripsRes, vehiclesRes, driversRes] = await Promise.all([
+    const [tripsRes, vehiclesRes, driversRes, priceRes] = await Promise.all([
       api.get(`/trips${params}`),
       api.get('/vehicles/available'),
       api.get('/drivers/available'),
+      api.get('/expenses/fuel-price').catch(() => ({ data: { pricePerLiter: 1.5 } })),
     ]);
     setTrips(tripsRes.data);
     setVehicles(vehiclesRes.data);
     setDrivers(driversRes.data);
+    setFuelPricePerLiter(priceRes.data.pricePerLiter);
     setLoading(false);
   };
 
@@ -180,7 +187,18 @@ export default function Trips() {
       <Modal open={!!completeModal} onClose={() => setCompleteModal(null)} title="Complete Trip">
         <form onSubmit={handleComplete} className="space-y-4">
           <Input label="Final Odometer (km)" type="number" value={completeForm.finalOdometer} onChange={(e) => setCompleteForm({ ...completeForm, finalOdometer: e.target.value })} required />
-          <Input label="Fuel Consumed (liters)" type="number" value={completeForm.fuelConsumed} onChange={(e) => setCompleteForm({ ...completeForm, fuelConsumed: e.target.value })} />
+          <Input label="Fuel Consumed (liters)" type="number" step="0.1" value={completeForm.fuelConsumed} onChange={(e) => setCompleteForm({ ...completeForm, fuelConsumed: e.target.value })} />
+          {fuelLiters > 0 && (
+            <div className="px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Estimated Fuel Cost</p>
+              <p className="text-lg font-semibold text-slate-900 dark:text-white mt-0.5">
+                {formatCurrency(estimatedFuelCost)}
+                <span className="text-sm font-normal text-slate-500 ml-2">
+                  ({fuelLiters} L × ${fuelPricePerLiter}/L)
+                </span>
+              </p>
+            </div>
+          )}
           <Input label="Actual Distance (km)" type="number" value={completeForm.actualDistance} onChange={(e) => setCompleteForm({ ...completeForm, actualDistance: e.target.value })} />
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => setCompleteModal(null)}>Cancel</Button>

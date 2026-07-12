@@ -89,6 +89,12 @@ async function main() {
     data: { vehicleId: van05.id, liters: 38, cost: 57, date: new Date('2026-06-15') },
   });
 
+  await prisma.fuelPrice.upsert({
+    where: { id: 'current' },
+    update: {},
+    create: { id: 'current', pricePerLiter: 1.5 },
+  });
+
   console.log('Seed complete!');
   console.log('\nDemo accounts (password: password123):');
   users.forEach((u) => console.log(`  ${u.role}: ${u.email}`));
