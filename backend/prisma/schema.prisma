@@ -53,7 +53,6 @@ model User {
   password            String
   name                String
   role                Role
-  deleted             Boolean   @default(false)
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
@@ -72,6 +71,7 @@ model User {
   // Financial Analyst role fields
   employeeId          String?
   department          String?
+  deleted             Boolean   @default(false)
 
   // Relations
   notifications       Notification[]

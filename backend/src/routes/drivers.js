@@ -57,6 +57,7 @@ router.get('/expiring-licenses', authorize('SAFETY_OFFICER', 'FLEET_MANAGER'), a
     const thirtyDays = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     const drivers = await prisma.driver.findMany({
       where: {
+        deleted: false,
         licenseExpiry: { lte: thirtyDays },
         status: { not: 'SUSPENDED' },
       },

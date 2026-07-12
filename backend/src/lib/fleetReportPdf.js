@@ -70,8 +70,9 @@ export async function gatherFleetReportData() {
       },
       orderBy: { registrationNumber: 'asc' },
     }),
-    prisma.driver.findMany({ orderBy: { name: 'asc' } }),
+    prisma.driver.findMany({ where: { deleted: false }, orderBy: { name: 'asc' } }),
     prisma.user.findMany({
+      where: { deleted: false },
       select: {
         id: true,
         name: true,

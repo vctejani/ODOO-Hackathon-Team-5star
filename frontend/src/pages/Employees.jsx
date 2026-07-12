@@ -50,6 +50,7 @@ export default function Employees() {
   const fetchEmployees = async () => {
     try {
       setLoading(true);
+      setError('');
       const [usersRes, driversRes] = await Promise.all([
         api.get('/users'),
         api.get('/drivers'),
@@ -58,6 +59,9 @@ export default function Employees() {
       setDriverTotal(driversRes.data.length);
     } catch (err) {
       console.error('Failed to fetch employees', err);
+      setError(err.response?.data?.error || 'Failed to load employees from the server. Please refresh or log in again.');
+      setEmployees([]);
+      setDriverTotal(0);
     } finally {
       setLoading(false);
     }
@@ -153,6 +157,13 @@ export default function Employees() {
           </Button>
         }
       />
+
+      {error && (
+        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 text-red-600 dark:text-red-400 text-sm rounded-xl flex items-center gap-2">
+          <AlertCircle size={16} />
+          <span>{error}</span>
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
